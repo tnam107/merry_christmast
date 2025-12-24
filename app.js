@@ -2,231 +2,203 @@ const canvas = document.getElementById("c");
 const ctx = canvas.getContext("2d");
 const startEl = document.getElementById("start");
 const startBtn = document.getElementById("startBtn");
-const nextMsgBtn = document.getElementById("nextMsgBtn"); // Nút bấm mới
+const msgContainer = document.getElementById("msgContainer");
+const messageBox = document.getElementById("messageBox");
+const nextMsgBtn = document.getElementById("nextMsgBtn");
 const audio = document.getElementById("audio");
-const vol = document.getElementById("vol");
 const muteBtn = document.getElementById("muteBtn");
 
-// ===== CẤU HÌNH =====
-// Danh sách lời chúc (Đã thêm nhiều hơn)
+let W, H, DPR;
+let started = false;
+let msgIndex = 0;
+
+// ===== DANH SÁCH LỜI CHÚC (Thêm nhiều hơn) =====
 const messages = [
-  { l1: "Merry Christmas! 🎄", l2: "Giáng Sinh vui vẻ nha cậu." },
-  { l1: "Tớ có một điều ước nhỏ...", l2: "...là cậu luôn được hạnh phúc." },
-  { l1: "Cảm ơn cậu vì đã xuất hiện", l2: "và làm thế giới của tớ rực rỡ hơn. ✨" },
-  { l1: "Chúc cậu xinh đẹp, rạng rỡ", l2: "Không chỉ Noel mà cả năm luôn nhé!" },
-  { l1: "Đừng quên mặc ấm nha,", l2: "Trời lạnh lắm đó! ❄️" },
-  { l1: "Mong mọi điều tốt đẹp nhất", l2: "sẽ đến với cậu trong năm mới." },
-  { l1: "Món quà này tớ code tặng cậu", l2: "Hy vọng cậu sẽ thích nó! ❤️" },
-  { l1: "Merry Christmas My Crush!", l2: "(Cậu cười lên xinh lắm á!)" }
+    { l1: "Merry Christmas! 🎄", l2: "Giáng Sinh an lành nhé cậu." },
+    { l1: "Tớ có một điều ước nhỏ...", l2: "...là thấy cậu luôn mỉm cười." },
+    { l1: "Cảm ơn cậu đã xuất hiện,", l2: "Làm thế giới của tới thêm màu sắc ✨" },
+    { l1: "Chúc cậu luôn xinh đẹp,", l2: "Rạng rỡ không chỉ hôm nay mà cả năm tới." },
+    { l1: "Nhớ mặc thật ấm nha,", l2: "Đừng để bị cảm lạnh đó! ❄️" },
+    { l1: "Mong mọi điều may mắn nhất", l2: "Sẽ đến với cậu trong năm mới." },
+    { l1: "Món quà này tớ tự làm,", l2: "Hy vọng cậu sẽ thích nó! ❤️" },
+    { l1: "Merry Christmas !!!", l2: "(Bấm vào màn hình thử xem!)" }
 ];
 
-let started = false;
-let msgIndex = 0; // Biến theo dõi tin nhắn hiện tại (không dùng thời gian nữa)
-let W, H, DPR;
+function showMessage() {
+    if(msgIndex >= messages.length) msgIndex = 0;
+    const msg = messages[msgIndex];
+    messageBox.innerHTML = `<span class="msg-line1">${msg.l1}</span><span class="msg-line2">${msg.l2}</span>`;
+    // Hiệu ứng nảy nhẹ khi đổi tin nhắn
+    messageBox.style.animation = 'none';
+    messageBox.offsetHeight; /* trigger reflow */
+    messageBox.style.animation = 'bounceGlow 0.5s ease-out';
+}
 
-// ===== HỆ THỐNG "BAY NHẢY" (Hovering Elements) =====
+
+// ===== HỆ THỐNG 1: CÁC PHẦN TỬ BAY LƯỢN (Background sống động) =====
 const floaters = [];
-const floaterIcons = ['❄️', '🌟', '🍂', '🌸', '✨'];
+const floaterIcons = ['❄️', '🌟', '🍂', '🌸', '✨', '🍃'];
 
 function initFloaters() {
     floaters.length = 0;
-    const count = 50; // Số lượng phần tử bay
+    const count = Math.min(W*H/15000, 60); // Số lượng tùy theo kích thước màn hình
     for(let i=0; i<count; i++) {
         floaters.push({
             x: Math.random() * W,
             y: Math.random() * H,
-            speedY: 0.5 + Math.random() * 1.5, // Tốc độ rơi
-            speedX: (Math.random() - 0.5) * 1, // Tốc độ bay ngang
-            size: 10 + Math.random() * 20,
+            speedY: 0.3 + Math.random() * 1.2, // Tốc độ rơi chậm
+            speedX: (Math.random() - 0.5) * 0.8, // Bay ngang nhẹ
+            size: 12 + Math.random() * 18,
             icon: floaterIcons[Math.floor(Math.random() * floaterIcons.length)],
             rot: Math.random() * Math.PI * 2,
-            rotSpeed: (Math.random() - 0.5) * 0.1
+            rotSpeed: (Math.random() - 0.5) * 0.05,
+            opacity: 0.4 + Math.random()*0.4
         });
     }
 }
 
-function updateAndDrawFloaters() {
+function drawFloaters() {
     ctx.save();
     ctx.textAlign = "center"; ctx.textBaseline = "middle";
     floaters.forEach(f => {
-        // Cập nhật vị trí
-        f.y += f.speedY;
-        f.x += f.speedX + Math.sin(f.y * 0.01) * 0.5; // Bay lượn sóng nhẹ
-        f.rot += f.rotSpeed;
+        f.y += f.speedY; f.x += f.speedX + Math.sin(f.y*0.02)*0.3; f.rot += f.rotSpeed;
+        if(f.y > H + 30) { f.y = -30; f.x = Math.random() * W; } // Lặp lại khi rơi xuống đáy
+        if(f.x > W+30) f.x = -30; if(f.x < -30) f.x = W+30;
 
-        // Lặp lại khi ra khỏi màn hình
-        if(f.y > H + 50) { f.y = -50; f.x = Math.random() * W; }
-        if(f.x > W + 50) f.x = -50;
-        if(f.x < -50) f.x = W + 50;
-
-        // Vẽ
+        ctx.globalAlpha = f.opacity;
         ctx.font = `${f.size}px serif`;
-        ctx.globalAlpha = 0.6;
-        ctx.translate(f.x, f.y);
-        ctx.rotate(f.rot);
+        ctx.translate(f.x, f.y); ctx.rotate(f.rot);
         ctx.fillText(f.icon, 0, 0);
-        ctx.rotate(-f.rot);
-        ctx.translate(-f.x, -f.y);
+        ctx.rotate(-f.rot); ctx.translate(-f.x, -f.y);
     });
     ctx.restore();
 }
 
 
-// ===== CÂY THÔNG SINH ĐỘNG HƠN =====
-let baseScale, cx, cy;
-let treePath = [];
-let ornaments = []; // Danh sách các quả châu trang trí
-
-function buildTree() {
-  baseScale = Math.min(W, H) * 0.55; cx = W/2; cy = H * 0.65;
-  treePath = [];
-  
-  // Hàm tạo dáng cây (đã điều chỉnh cho bầu bĩnh hơn chút)
-  const widthFn = t => {
-      const base = 0.04 + 0.35 * Math.pow(t, 0.9);
-      const notches = 0.15 * Math.exp(-Math.pow((t-0.3)/0.1,2)) + 0.3 * Math.exp(-Math.pow((t-0.7)/0.15,2));
-      return Math.max(0.04, base + notches - 0.08*Math.exp(-Math.pow((t-0.55)/0.08,2)));
-  };
-
-  // Xây dựng đường viền cây
-  for(let i=0; i<=150; i++) { let t=i/150; treePath.push({x: cx - widthFn(t)*baseScale, y: cy + (-0.65 + 1.1*t)*baseScale}); }
-  for(let i=0; i<=80; i++) { let u=i/80; treePath.push({x: cx + (-widthFn(1)*1.5 + widthFn(1)*3.0*u)*baseScale, y: cy + (0.45 + 0.03*Math.sin(u*Math.PI))*baseScale}); }
-  for(let i=0; i<=150; i++) { let t=i/150; treePath.push({x: cx + widthFn(1-t)*baseScale, y: cy + (-0.65 + 1.1*(1-t))*baseScale}); }
-
-  // Tạo quả châu trang trí ngẫu nhiên trên thân cây
-  ornaments = [];
-  for(let i=0; i<35; i++) {
-      let t = Math.random() * 0.9 + 0.05; // Vị trí dọc theo cây (tránh đỉnh và đáy quá sát)
-      let w = widthFn(t) * baseScale * (Math.random()*0.8); // Vị trí ngang ngẫu nhiên bên trong cây
-      let xStr = Math.random() > 0.5 ? 1 : -1;
-      ornaments.push({
-          x: cx + w * xStr,
-          y: cy + (-0.65 + 1.1*t)*baseScale,
-          r: 3 + Math.random()*5, // Kích thước
-          color: `hsl(${Math.random()*360}, 80%, 60%)`, // Màu ngẫu nhiên
-          phase: Math.random() * Math.PI * 2 // Pha nhấp nháy
-      });
-  }
-}
-
-function drawTree(now) {
-    // Vẽ cây phát sáng
-    ctx.strokeStyle = "#f5c37a"; ctx.lineWidth = 4; ctx.lineCap = "round";
-    ctx.shadowColor = "#ffc0cb"; ctx.shadowBlur = 25;
-    ctx.beginPath(); ctx.moveTo(treePath[0].x, treePath[0].y);
-    treePath.forEach(p => ctx.lineTo(p.x, p.y));
-    ctx.stroke(); ctx.shadowBlur = 0;
-
-    // Vẽ ngôi sao đỉnh
-    const topY = cy - 0.65*baseScale;
-    ctx.fillStyle = "#ffd700"; ctx.shadowColor="#ffd700"; ctx.shadowBlur=30;
-    drawStar(cx, topY, 5, baseScale*0.1, baseScale*0.05);
-    ctx.fill(); ctx.shadowBlur=0;
-
-    // Vẽ quả châu trang trí (nhấp nháy)
-    ornaments.forEach(o => {
-        const intensity = 0.5 + 0.5 * Math.sin(now * 0.003 + o.phase);
-        ctx.globalAlpha = 0.8 + 0.2*intensity;
-        ctx.fillStyle = o.color;
-        ctx.shadowColor = o.color;
-        ctx.shadowBlur = 10 * intensity;
-        ctx.beginPath(); ctx.arc(o.x, o.y, o.r, 0, Math.PI*2); ctx.fill();
-    });
-    ctx.globalAlpha = 1; ctx.shadowBlur=0;
-}
-function drawStar(cx,cy,spikes,r0,r1){ctx.beginPath();let rot=Math.PI/2*3,x=cx,y=cy,step=Math.PI/spikes;for(let i=0;i<spikes;i++){x=cx+Math.cos(rot)*r0;y=cy+Math.sin(rot)*r0;ctx.lineTo(x,y);rot+=step;x=cx+Math.cos(rot)*r1;y=cy+Math.sin(rot)*r1;ctx.lineTo(x,y);rot+=step;}ctx.lineTo(cx,cy-r0);ctx.closePath();}
-
-
-// ===== VẼ CHỮ (Font mới & Logic mới) =====
-function drawMessage() {
-    if(msgIndex >= messages.length) msgIndex = 0; // Lặp lại khi hết
-    const msg = messages[msgIndex];
-
-    ctx.save(); ctx.textAlign = "center"; 
-    ctx.shadowColor = "rgba(0,0,0,0.5)"; ctx.shadowBlur = 5;
-
-    // Dùng font Mountains of Christmas cho đồng bộ và đẹp
-    const s1 = Math.min(60, W*0.1); 
-    ctx.font = `${s1}px 'Mountains of Christmas', cursive`;
-    ctx.fillStyle = "#f5c37a"; // Màu vàng sáng
-    ctx.fillText(msg.l1, W/2, H*0.82);
-
-    if(msg.l2) {
-      ctx.font = `${s1*0.6}px 'Mountains of Christmas', cursive`;
-      ctx.fillStyle = "#fff";
-      ctx.fillText(msg.l2, W/2, H*0.82 + s1*0.9);
-    }
-    ctx.restore();
-}
-
-
-// ===== PHÁO HOA (Hiệu ứng click) =====
+// ===== HỆ THỐNG 2: PHÁO HOA (Click hiệu ứng) =====
 const fireworks = [];
 function spawnFirework(x, y) {
-  const colors = ['#ffc0cb', '#f5c37a', '#e0f7fa', '#ffd700'];
-  const color = colors[Math.floor(Math.random()*colors.length)];
-  for(let i=0; i<40; i++) {
-    const a = Math.random()*Math.PI*2, s = Math.random()*5+2;
-    fireworks.push({x, y, vx:Math.cos(a)*s, vy:Math.sin(a)*s, life:1, color});
+  const colors = ['#ffc0cb', '#f5c37a', '#87ceeb', '#ffd700', '#ff69b4'];
+  const particleCount = 30 + Math.random()*20;
+  for(let i=0; i<particleCount; i++) {
+    const a = Math.random()*Math.PI*2, s = Math.random()*4+2;
+    fireworks.push({
+        x, y, 
+        vx: Math.cos(a)*s, vy: Math.sin(a)*s, 
+        life: 1, decay: 0.015 + Math.random()*0.02,
+        color: colors[Math.floor(Math.random()*colors.length)],
+        size: 2 + Math.random()*3
+    });
   }
 }
-function updateDrawFireworks() {
+function drawFireworks() {
     fireworks.forEach((p,i) => {
-        p.x+=p.vx; p.y+=p.vy; p.vy+=0.05; p.life-=0.02;
-        ctx.globalAlpha=p.life; ctx.fillStyle=p.color;
-        ctx.beginPath(); ctx.arc(p.x,p.y,3*p.life,0,Math.PI*2); ctx.fill();
+        p.x+=p.vx; p.y+=p.vy; p.vy+=0.08; // Trọng lực
+        p.life -= p.decay;
+        ctx.globalAlpha = p.life; ctx.fillStyle = p.color;
+        ctx.beginPath(); ctx.arc(p.x, p.y, p.size*p.life, 0, Math.PI*2); ctx.fill();
         if(p.life<=0) fireworks.splice(i,1);
     });
     ctx.globalAlpha=1;
 }
 
 
+// ===== HỆ THỐNG 3: CÂY THÔNG SINH ĐỘNG (Thêm quả châu) =====
+let treeScale, cx, cy, treePath = [], ornaments = [];
+
+function buildTreeGeometry() {
+  treeScale = Math.min(W, H) * 0.5; cx = W/2; cy = H * 0.6;
+  treePath = []; ornaments = [];
+
+  // Hàm tạo dáng cây bầu bĩnh
+  const wFn = t => {
+      const b = 0.05 + 0.35*Math.pow(t,0.9);
+      const n = 0.15*Math.exp(-Math.pow((t-0.3)/0.1,2)) + 0.3*Math.exp(-Math.pow((t-0.7)/0.15,2));
+      return Math.max(0.05, b + n - 0.08*Math.exp(-Math.pow((t-0.55)/0.08,2)));
+  };
+
+  // Tạo đường viền
+  for(let i=0; i<=120; i++){ let t=i/120; treePath.push({x:cx-wFn(t)*treeScale,y:cy+(-0.65+1.1*t)*treeScale}); }
+  for(let i=0; i<=60; i++){ let u=i/60; treePath.push({x:cx+(-wFn(1)*1.5+wFn(1)*3*u)*treeScale,y:cy+(0.45+0.04*Math.sin(u*Math.PI))*treeScale}); }
+  for(let i=0; i<=120; i++){ let t=i/120; treePath.push({x:cx+wFn(1-t)*treeScale,y:cy+(-0.65+1.1*(1-t))*treeScale}); }
+
+  // Tạo quả châu trang trí (Ornaments)
+  for(let i=0; i<40; i++) {
+      const t = Math.random()*0.85 + 0.1; // Vị trí dọc thân cây
+      const side = Math.random() > 0.5 ? 1 : -1;
+      const w = wFn(t) * treeScale * (0.2 + Math.random()*0.7); // Vị trí ngang bên trong
+      ornaments.push({
+          x: cx + w*side, 
+          y: cy + (-0.65 + 1.1*t)*treeScale,
+          r: 4 + Math.random()*5,
+          hue: Math.random()*360,
+          phase: Math.random()*Math.PI*2
+      });
+  }
+}
+
+function drawTree(now) {
+    // Vẽ đường viền phát sáng
+    ctx.strokeStyle = "#f5c37a"; ctx.lineWidth = 5; ctx.lineCap = "round";
+    ctx.shadowColor = "#ffc0cb"; ctx.shadowBlur = 30;
+    ctx.beginPath(); ctx.moveTo(treePath[0].x, treePath[0].y);
+    treePath.forEach(p => ctx.lineTo(p.x, p.y)); ctx.stroke(); ctx.shadowBlur = 0;
+
+    // Vẽ ngôi sao đỉnh
+    ctx.fillStyle="#ffd700"; ctx.shadowColor="#ffd700"; ctx.shadowBlur=40;
+    drawStar(cx, cy-0.65*treeScale, 5, treeScale*0.12, treeScale*0.06); ctx.fill(); ctx.shadowBlur=0;
+
+    // Vẽ quả châu nhấp nháy
+    ornaments.forEach(o => {
+        const flicker = 0.6 + 0.4*Math.sin(now*0.004 + o.phase);
+        ctx.fillStyle = `hsla(${o.hue}, 80%, 60%, ${flicker})`;
+        ctx.shadowColor = ctx.fillStyle; ctx.shadowBlur = 15*flicker;
+        ctx.beginPath(); ctx.arc(o.x, o.y, o.r, 0, Math.PI*2); ctx.fill();
+    });
+    ctx.shadowBlur=0;
+}
+function drawStar(cx,cy,spikes,r0,r1){ctx.beginPath();let rot=Math.PI/2*3,x,y,step=Math.PI/spikes;for(let i=0;i<spikes;i++){x=cx+Math.cos(rot)*r0;y=cy+Math.sin(rot)*r0;ctx.lineTo(x,y);rot+=step;x=cx+Math.cos(rot)*r1;y=cy+Math.sin(rot)*r1;ctx.lineTo(x,y);rot+=step;}ctx.lineTo(cx,cy-r0);ctx.closePath();}
+
+
 // ===== VÒNG LẶP CHÍNH =====
 function loop(now) {
-  ctx.clearRect(0,0,W,H); // Xóa canvas để lộ background ảnh bên dưới
-  
+  ctx.clearRect(0,0,W,H);
   if(started) {
-      updateAndDrawFloaters(); // Vẽ các icon bay
-      drawTree(now);          // Vẽ cây sinh động
-      drawMessage();          // Vẽ tin nhắn hiện tại
-      updateDrawFireworks();  // Vẽ pháo hoa nếu có click
+      drawFloaters(now);   // 1. Vẽ nền bay lượn
+      drawTree(now);       // 2. Vẽ cây sinh động
+      drawFireworks();     // 3. Vẽ pháo hoa (nếu có)
   }
-
   requestAnimationFrame(loop);
 }
 
 
-// ===== SỰ KIỆN & KHỞI TẠO =====
+// ===== XỬ LÝ SỰ KIỆN =====
 function resize() {
-  DPR = window.devicePixelRatio || 1;
   W = window.innerWidth; H = window.innerHeight;
-  canvas.width = W * DPR; canvas.height = H * DPR;
-  ctx.scale(DPR, DPR);
-  buildTree();
-  initFloaters();
+  DPR = Math.min(2, window.devicePixelRatio||1);
+  canvas.width = W*DPR; canvas.height = H*DPR; ctx.scale(DPR, DPR);
+  buildTreeGeometry(); initFloaters();
 }
 
-// Click nút BẮT ĐẦU
 startBtn.addEventListener("click", () => {
   started = true;
   startEl.classList.add("hide");
-  nextMsgBtn.classList.remove("hide"); // Hiện nút chuyển tin nhắn
-  audio.play().catch(()=>console.log("Cần tương tác để phát nhạc"));
+  msgContainer.classList.remove("hide");
+  showMessage(); // Hiện tin nhắn đầu tiên
+  audio.play().catch(()=>{});
+  spawnFirework(W/2, H/2); // Bắn pháo hoa mở màn
 });
 
-// Click nút CHUYỂN TIN NHẮN (Mới)
-nextMsgBtn.addEventListener("click", () => {
-    msgIndex++; // Tăng index để sang câu tiếp theo
-    spawnFirework(W/2, H*0.8); // Bắn pháo hoa nhỏ khi chuyển câu
+nextMsgBtn.addEventListener("click", (e) => {
+    e.stopPropagation(); // Ngăn không cho click xuyên qua canvas
+    msgIndex++; 
+    showMessage();
+    spawnFirework(W/2, H*0.8); // Pháo hoa khi chuyển tin
 });
 
-// Click màn hình bắn pháo hoa
+// Click vào canvas để bắn pháo hoa
 canvas.addEventListener("pointerdown", e => spawnFirework(e.clientX, e.clientY));
-
-// Âm thanh
-audio.loop = true; audio.volume = 0.7;
-vol.addEventListener("input", () => audio.volume = vol.value);
-muteBtn.addEventListener("click", () => audio.muted = !audio.muted);
+muteBtn.addEventListener("click", () => { audio.muted = !audio.muted; muteBtn.textContent = audio.muted ? "🔇" : "🔊"; });
 
 window.addEventListener("resize", resize);
 resize();

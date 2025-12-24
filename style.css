@@ -1,86 +1,115 @@
 :root {
-    --glow: #f5c37a;
-    --pink: #ffc0cb;
-    --text: rgba(255, 255, 255, 0.95);
-    --font-festive: 'Mountains of Christmas', serif;
-  }
-  
-  * { box-sizing: border-box; }
-  html, body { height: 100%; margin: 0; }
-  
-  body {
-    overflow: hidden;
-    /* BACKGROUND SỐNG ĐỘNG HƠN: Dùng ảnh họa tiết và phủ một lớp tối để dễ đọc chữ */
-    background: linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.6)), 
-                url('https://img.freepik.com/free-vector/hand-drawn-christmas-pattern-design_23-2149744640.jpg');
-    background-size: cover;
-    background-position: center;
-    font-family: system-ui, sans-serif;
-  }
-  
-  #c { position: fixed; inset: 0; z-index: 0; }
-  
-  /* Màn hình Start */
-  .start {
-    position: fixed; inset: 0; display: flex; flex-direction: column;
-    align-items: center; justify-content: center; gap: 20px;
-    background: rgba(0,0,0,0.75); backdrop-filter: blur(5px);
-    transition: opacity 0.8s ease, visibility 0.8s; z-index: 20;
-  }
-  .start.hide { opacity: 0; visibility: hidden; pointer-events: none; }
-  
-  .sub-title {
-    font-family: var(--font-festive); font-size: 48px;
-    color: var(--glow); text-shadow: 0 0 20px var(--pink);
-    letter-spacing: 2px;
-  }
-  
-  .startBtn {
-    display: inline-flex; align-items: center; gap: 15px; padding: 15px 30px;
-    border-radius: 50px; border: 2px solid var(--glow);
-    background: rgba(255,255,255,0.1); color: var(--text);
-    font-size: 18px; font-weight: bold; cursor: pointer; transition: all 0.3s;
-  }
-  .startBtn:hover { background: var(--glow); color: #000; box-shadow: 0 0 30px var(--glow); }
-  .startBtn .dot { width: 12px; height: 12px; background: var(--pink); border-radius: 50%; animation: pulse 1s infinite; }
-  
-  .hint-text { color: #ccc; font-style: italic; font-size: 14px; }
-  
-  /* NÚT CHUYỂN TIN NHẮN MỚI */
-  .next-msg-btn {
-      position: fixed;
-      bottom: 30px;
-      left: 50%;
-      transform: translateX(-50%);
-      padding: 12px 24px;
-      background: rgba(255, 192, 203, 0.2);
-      border: 2px solid var(--pink);
-      border-radius: 30px;
-      color: var(--text);
-      font-family: var(--font-festive);
-      font-size: 20px;
-      cursor: pointer;
-      z-index: 15;
-      backdrop-filter: blur(5px);
-      box-shadow: 0 0 15px rgba(255, 192, 203, 0.5);
-      animation: bounceGlow 2s infinite ease-in-out;
-      transition: opacity 0.5s, visibility 0.5s;
-  }
-  .next-msg-btn:hover {
-      background: var(--pink); color: #000;
-  }
-  .next-msg-btn.hide { opacity: 0; visibility: hidden; pointer-events: none; }
+  --glow: #f5c37a;    /* Vàng ấm */
+  --pink: #ffc0cb;    /* Hồng phấn */
+  --text: #ffffff;
+  --font-title: 'Mountains of Christmas', serif;
+  --font-msg: 'Dancing Script', cursive;
+}
 
-  @keyframes pulse { 0%, 100% { transform: scale(1); opacity: 0.8; } 50% { transform: scale(1.4); opacity: 1; } }
-  @keyframes bounceGlow {
-      0%, 100% { transform: translateX(-50%) scale(1); box-shadow: 0 0 15px var(--pink); }
-      50% { transform: translateX(-50%) scale(1.05); box-shadow: 0 0 30px var(--glow); }
-  }
-  
-  .volUI {
-    position: fixed; right: 20px; top: 20px; display: flex;
-    align-items: center; gap: 10px; padding: 8px 12px;
-    border-radius: 30px; background: rgba(0,0,0,0.5); z-index: 30;
-  }
-  .iconBtn { background: none; border: none; color: #fff; font-size: 20px; cursor: pointer; }
-  .volUI input { width: 80px; accent-color: var(--glow); }
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body { height: 100%; margin: 0; padding: 0; overflow: hidden; }
+
+body {
+  /* Nền tối kết hợp ảnh họa tiết nhẹ */
+  background: radial-gradient(circle at center, #1b2550 0%, #0a1030 50%, #050814 100%);
+  font-family: system-ui, sans-serif;
+}
+
+/* Canvas nằm dưới cùng để không che nút bấm */
+#c {
+  position: fixed; inset: 0; z-index: 0;
+  touch-action: none; /* Ngăn chặn hành động chạm mặc định trên mobile */
+}
+
+/* --- Màn hình Start --- */
+.start {
+  position: fixed; inset: 0; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 25px;
+  background: rgba(5,8,20,0.85); backdrop-filter: blur(8px);
+  transition: opacity 0.6s ease, visibility 0.6s; z-index: 100;
+}
+.start.hide { opacity: 0; visibility: hidden; pointer-events: none; }
+
+.sub-title {
+  font-family: var(--font-title); font-size: 50px;
+  color: var(--glow); text-shadow: 0 0 25px var(--pink); letter-spacing: 3px;
+}
+
+.startBtn {
+  display: inline-flex; align-items: center; gap: 15px; padding: 16px 32px;
+  border-radius: 50px; border: 2px solid var(--glow);
+  background: rgba(255,255,255,0.05); color: var(--text);
+  font-size: 18px; font-weight: 700; cursor: pointer; transition: all 0.3s ease;
+  box-shadow: 0 0 15px rgba(245, 195, 122, 0.3);
+}
+.startBtn:hover { transform: scale(1.05); background: rgba(245, 195, 122, 0.15); box-shadow: 0 0 30px var(--glow); }
+.startBtn .dot { width: 14px; height: 14px; background: var(--pink); border-radius: 50%; animation: pulse 1.2s infinite alternate; }
+.hint-text { color: #aaa; font-style: italic; font-size: 14px; margin-top: -10px;}
+
+/* --- Khu vực Lời chúc & Nút bấm (Căn giữa chuẩn) --- */
+.msg-container {
+    position: fixed;
+    bottom: 40px; /* Cách đáy */
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+    z-index: 50; /* Nổi lên trên canvas */
+    transition: opacity 0.5s, visibility 0.5s;
+    width: 90%; /* Đảm bảo không bị quá rộng trên mobile */
+    max-width: 600px;
+    pointer-events: none; /* Để click xuyên qua vùng trống vào canvas */
+}
+.msg-container.hide { opacity: 0; visibility: hidden; }
+
+/* Hộp chứa lời chúc */
+.message-box {
+    text-align: center;
+    color: var(--glow);
+    text-shadow: 0 0 10px rgba(0,0,0,0.8);
+    pointer-events: auto; /* Cho phép tương tác (ví dụ bôi đen text) */
+}
+.msg-line1 { font-family: var(--font-msg); font-size: 38px; font-weight: 700; margin-bottom: 8px; display: block; text-shadow: 0 0 20px var(--pink);}
+.msg-line2 { font-family: system-ui, sans-serif; font-size: 18px; color: #e0e0e0; display: block;}
+
+/* Nút chuyển tin nhắn */
+.next-msg-btn {
+    pointer-events: auto; /* Bắt buộc có để nhận click */
+    padding: 12px 28px;
+    background: rgba(255, 192, 203, 0.15);
+    border: 2px solid var(--pink);
+    border-radius: 30px;
+    color: var(--text);
+    font-family: system-ui, sans-serif;
+    font-weight: 600; font-size: 16px;
+    cursor: pointer;
+    backdrop-filter: blur(5px);
+    box-shadow: 0 0 15px rgba(255, 192, 203, 0.4);
+    animation: bounceGlow 2s infinite ease-in-out;
+    transition: all 0.3s;
+}
+.next-msg-btn:hover { background: var(--pink); color: #000; transform: scale(1.05); }
+.next-msg-btn:active { transform: scale(0.95); }
+
+
+/* --- Nút âm thanh --- */
+.volUI {
+  position: fixed; right: 20px; top: 20px; z-index: 90;
+  background: rgba(0,0,0,0.4); padding: 8px; border-radius: 50%;
+}
+.iconBtn { background: none; border: none; color: #fff; font-size: 24px; cursor: pointer; }
+
+/* --- Animations --- */
+@keyframes pulse { from { box-shadow: 0 0 10px var(--pink); } to { box-shadow: 0 0 25px var(--glow), 0 0 40px var(--pink); transform: scale(1.2); } }
+@keyframes bounceGlow { 0%, 100% { transform: scale(1); box-shadow: 0 0 15px var(--pink); } 50% { transform: scale(1.05); box-shadow: 0 0 25px var(--glow); } }
+
+/* Responsive cho màn hình nhỏ */
+@media (max-width: 600px) {
+    .sub-title { font-size: 40px; }
+    .msg-line1 { font-size: 32px; }
+    .msg-line2 { font-size: 16px; }
+    .next-msg-btn { font-size: 14px; padding: 10px 20px; }
+    .msg-container { bottom: 30px; }
+}
