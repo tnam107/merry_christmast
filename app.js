@@ -1,205 +1,404 @@
-const canvas = document.getElementById("c");
-const ctx = canvas.getContext("2d");
-const startEl = document.getElementById("start");
-const startBtn = document.getElementById("startBtn");
-const msgContainer = document.getElementById("msgContainer");
-const messageBox = document.getElementById("messageBox");
-const nextMsgBtn = document.getElementById("nextMsgBtn");
-const audio = document.getElementById("audio");
-const muteBtn = document.getElementById("muteBtn");
+/**
+ * MERRY CHRISTMAS APP - ULTIMATE VERSION
+ * Code by: Your AI Assistant
+ * Logic: Object Oriented Programming (OOP) for stability and performance.
+ */
 
-let W, H, DPR;
-let started = false;
-let msgIndex = 0;
+// --- CẤU HÌNH ---
+const CONFIG = {
+    fireworkChance: 0.05, // Tỷ lệ tự nổ pháo hoa
+    particleCount: 40,    // Số hạt pháo hoa mỗi lần nổ
+    floaterCount: 60,     // Số lượng vật thể bay (hoa, lá, tuyết)
+    treeColor: '#f5c37a', // Màu cây
+    ornamentCount: 45,    // Số quả châu trên cây
+};
 
-// ===== DANH SÁCH LỜI CHÚC (Thêm nhiều hơn) =====
-const messages = [
-    { l1: "Merry Christmas! 🎄", l2: "Giáng Sinh an lành nhé cậu." },
-    { l1: "Tớ có một điều ước nhỏ...", l2: "...là thấy cậu luôn mỉm cười." },
-    { l1: "Cảm ơn cậu đã xuất hiện,", l2: "Làm thế giới của tới thêm màu sắc ✨" },
-    { l1: "Chúc cậu luôn xinh đẹp,", l2: "Rạng rỡ không chỉ hôm nay mà cả năm tới." },
-    { l1: "Nhớ mặc thật ấm nha,", l2: "Đừng để bị cảm lạnh đó! ❄️" },
-    { l1: "Mong mọi điều may mắn nhất", l2: "Sẽ đến với cậu trong năm mới." },
-    { l1: "Món quà này tớ tự làm,", l2: "Hy vọng cậu sẽ thích nó! ❤️" },
-    { l1: "Merry Christmas !!!", l2: "(Bấm vào màn hình thử xem!)" }
+// --- DANH SÁCH LỜI CHÚC (Thêm nhiều câu hơn) ---
+const MESSAGES = [
+    { l1: "Merry Christmas! 🎄", l2: "Chúc cậu một mùa Giáng Sinh ấm áp." },
+    { l1: "Tớ muốn nói là...", l2: "...cậu thực sự rất đặc biệt với tớ." },
+    { l1: "Cảm ơn cậu nhé,", l2: "Vì đã xuất hiện và làm thế giới này rạng rỡ hơn ✨" },
+    { l1: "Chúc cậu luôn vui vẻ,", l2: "Nụ cười của cậu đẹp như pháo hoa vậy!" },
+    { l1: "Nhớ giữ ấm nha,", l2: "Đừng để bị ốm đấy, tớ lo. ❄️" },
+    { l1: "Năm mới sắp đến rồi,", l2: "Mong mọi điều may mắn sẽ gõ cửa nhà cậu." },
+    { l1: "Món quà nhỏ này...", l2: "...chứa đựng rất nhiều tình cảm của tớ." },
+    { l1: "Đừng buồn phiền nhé,", l2: "Vì luôn có tớ ở đây ủng hộ cậu." },
+    { l1: "Giáng Sinh an lành!", l2: "Mãi xinh đẹp và hạnh phúc như này nhé! ❤️" },
+    { l1: "Hết rồi á?", l2: "Chưa đâu, bấm tiếp đi nào! 😜" },
+    { l1: "Yêu đời lên nhé!", l2: "Merry Christmas My Crush!" }
 ];
 
-function showMessage() {
-    if(msgIndex >= messages.length) msgIndex = 0;
-    const msg = messages[msgIndex];
-    messageBox.innerHTML = `<span class="msg-line1">${msg.l1}</span><span class="msg-line2">${msg.l2}</span>`;
-    // Hiệu ứng nảy nhẹ khi đổi tin nhắn
-    messageBox.style.animation = 'none';
-    messageBox.offsetHeight; /* trigger reflow */
-    messageBox.style.animation = 'bounceGlow 0.5s ease-out';
-}
+// --- CLASSES (CÁC LỚP ĐỐI TƯỢNG) ---
 
+/**
+ * Lớp quản lý Vật thể bay (Hoa, Lá, Tuyết, Sao)
+ */
+class Floater {
+    constructor(w, h) {
+        this.icons = ['❄️', '🌟', '🍂', '🌸', '✨', '🍀', '🍁'];
+        this.reset(w, h);
+    }
 
-// ===== HỆ THỐNG 1: CÁC PHẦN TỬ BAY LƯỢN (Background sống động) =====
-const floaters = [];
-const floaterIcons = ['❄️', '🌟', '🍂', '🌸', '✨', '🍃'];
+    reset(w, h) {
+        this.x = Math.random() * w;
+        this.y = Math.random() * h;
+        this.vx = (Math.random() - 0.5) * 1.5; // Tốc độ ngang
+        this.vy = 0.5 + Math.random() * 1.5;   // Tốc độ rơi
+        this.size = 12 + Math.random() * 20;   // Kích thước ngẫu nhiên
+        this.icon = this.icons[Math.floor(Math.random() * this.icons.length)];
+        this.rotation = Math.random() * Math.PI * 2;
+        this.rotSpeed = (Math.random() - 0.5) * 0.05;
+        this.opacity = 0.3 + Math.random() * 0.7;
+    }
 
-function initFloaters() {
-    floaters.length = 0;
-    const count = Math.min(W*H/15000, 60); // Số lượng tùy theo kích thước màn hình
-    for(let i=0; i<count; i++) {
-        floaters.push({
-            x: Math.random() * W,
-            y: Math.random() * H,
-            speedY: 0.3 + Math.random() * 1.2, // Tốc độ rơi chậm
-            speedX: (Math.random() - 0.5) * 0.8, // Bay ngang nhẹ
-            size: 12 + Math.random() * 18,
-            icon: floaterIcons[Math.floor(Math.random() * floaterIcons.length)],
-            rot: Math.random() * Math.PI * 2,
-            rotSpeed: (Math.random() - 0.5) * 0.05,
-            opacity: 0.4 + Math.random()*0.4
-        });
+    update(w, h) {
+        this.x += this.vx + Math.sin(this.y * 0.01) * 0.5; // Bay lượn sóng
+        this.y += this.vy;
+        this.rotation += this.rotSpeed;
+
+        // Nếu rơi quá màn hình thì reset lên trên
+        if (this.y > h + 30) {
+            this.y = -30;
+            this.x = Math.random() * w;
+        }
+        if (this.x > w + 30) this.x = -30;
+        if (this.x < -30) this.x = w + 30;
+    }
+
+    draw(ctx) {
+        ctx.save();
+        ctx.globalAlpha = this.opacity;
+        ctx.font = `${this.size}px Arial`; // Dùng font Arial cho icon hiển thị chuẩn
+        ctx.translate(this.x, this.y);
+        ctx.rotate(this.rotation);
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText(this.icon, 0, 0);
+        ctx.restore();
     }
 }
 
-function drawFloaters() {
-    ctx.save();
-    ctx.textAlign = "center"; ctx.textBaseline = "middle";
-    floaters.forEach(f => {
-        f.y += f.speedY; f.x += f.speedX + Math.sin(f.y*0.02)*0.3; f.rot += f.rotSpeed;
-        if(f.y > H + 30) { f.y = -30; f.x = Math.random() * W; } // Lặp lại khi rơi xuống đáy
-        if(f.x > W+30) f.x = -30; if(f.x < -30) f.x = W+30;
+/**
+ * Lớp quản lý Hạt pháo hoa
+ */
+class FireworkParticle {
+    constructor(x, y, color) {
+        this.x = x;
+        this.y = y;
+        const angle = Math.random() * Math.PI * 2;
+        const speed = Math.random() * 4 + 2;
+        this.vx = Math.cos(angle) * speed;
+        this.vy = Math.sin(angle) * speed;
+        this.life = 1.0; // Tuổi thọ (1.0 -> 0.0)
+        this.decay = 0.015 + Math.random() * 0.02; // Tốc độ mờ
+        this.color = color;
+        this.gravity = 0.08;
+    }
 
-        ctx.globalAlpha = f.opacity;
-        ctx.font = `${f.size}px serif`;
-        ctx.translate(f.x, f.y); ctx.rotate(f.rot);
-        ctx.fillText(f.icon, 0, 0);
-        ctx.rotate(-f.rot); ctx.translate(-f.x, -f.y);
-    });
-    ctx.restore();
+    update() {
+        this.x += this.vx;
+        this.y += this.vy;
+        this.vy += this.gravity; // Chịu ảnh hưởng trọng lực
+        this.vx *= 0.98; // Lực cản không khí
+        this.vy *= 0.98;
+        this.life -= this.decay;
+    }
+
+    draw(ctx) {
+        if (this.life <= 0) return;
+        ctx.save();
+        ctx.globalAlpha = this.life;
+        ctx.fillStyle = this.color;
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, 3, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+    }
 }
 
+/**
+ * Lớp Cây Thông (Tính toán hình học phức tạp)
+ */
+class ChristmasTree {
+    constructor() {
+        this.path = [];
+        this.ornaments = [];
+        this.widthFn = (t) => {
+            // Hàm tính độ rộng thân cây theo chiều cao t (0->1)
+            // Tạo dáng cây có eo và phình ra (3 tầng lá)
+            const base = 0.1 + 0.4 * Math.pow(t, 0.8);
+            const notches = 0.15 * Math.exp(-Math.pow((t - 0.3) / 0.1, 2)) +
+                            0.25 * Math.exp(-Math.pow((t - 0.7) / 0.15, 2));
+            return base + notches;
+        };
+    }
 
-// ===== HỆ THỐNG 2: PHÁO HOA (Click hiệu ứng) =====
+    // Tính toán lại dáng cây dựa trên kích thước màn hình
+    rebuild(w, h) {
+        // Cây chiếm khoảng không gian ở giữa, chừa chỗ cho UI bên dưới
+        const availableHeight = h - 220; // Trừ đi phần nút bấm
+        this.scale = Math.min(w * 0.5, availableHeight) * 0.85;
+        this.cx = w / 2;
+        this.cy = (h - 220) * 0.75; // Đặt gốc cây
+
+        this.path = [];
+        // Tính toán tọa độ viền trái
+        for (let i = 0; i <= 100; i++) {
+            const t = i / 100;
+            const x = this.cx - this.widthFn(t) * this.scale * 0.5;
+            const y = this.cy + (-0.8 + 1.2 * t) * this.scale;
+            this.path.push({ x, y });
+        }
+        // Tính toán đáy cây (cong nhẹ)
+        for (let i = 0; i <= 40; i++) {
+            const u = i / 40;
+            const x = this.cx + (-this.widthFn(1) * 0.5 + this.widthFn(1) * u) * this.scale;
+            const y = this.cy + (0.4 + 0.05 * Math.sin(u * Math.PI)) * this.scale;
+            this.path.push({ x, y });
+        }
+        // Tính toán viền phải
+        for (let i = 0; i <= 100; i++) {
+            const t = i / 100;
+            const x = this.cx + this.widthFn(1 - t) * this.scale * 0.5;
+            const y = this.cy + (-0.8 + 1.2 * (1 - t)) * this.scale;
+            this.path.push({ x, y });
+        }
+
+        // Tạo lại vị trí các quả châu
+        this.ornaments = [];
+        for (let i = 0; i < CONFIG.ornamentCount; i++) {
+            const t = 0.1 + Math.random() * 0.8;
+            const side = Math.random() > 0.5 ? 1 : -1;
+            const w = this.widthFn(t) * this.scale * 0.5 * (0.2 + Math.random() * 0.6);
+            this.ornaments.push({
+                x: this.cx + w * side,
+                y: this.cy + (-0.8 + 1.2 * t) * this.scale,
+                r: 3 + Math.random() * 5,
+                color: `hsl(${Math.random() * 360}, 80%, 60%)`,
+                phase: Math.random() * Math.PI * 2
+            });
+        }
+    }
+
+    draw(ctx, time) {
+        // Vẽ dây đèn Neon (Viền cây)
+        ctx.save();
+        ctx.strokeStyle = CONFIG.treeColor;
+        ctx.lineWidth = 4;
+        ctx.lineCap = "round";
+        ctx.lineJoin = "round";
+        ctx.shadowColor = "#ffc0cb";
+        ctx.shadowBlur = 20;
+
+        ctx.beginPath();
+        if (this.path.length > 0) {
+            ctx.moveTo(this.path[0].x, this.path[0].y);
+            for (let i = 1; i < this.path.length; i++) {
+                ctx.lineTo(this.path[i].x, this.path[i].y);
+            }
+        }
+        ctx.stroke();
+        ctx.restore();
+
+        // Vẽ Ngôi sao đỉnh
+        if (this.path.length > 0) {
+            const topY = this.path[0].y;
+            this.drawStar(ctx, this.cx, topY, 5, this.scale * 0.12, this.scale * 0.06);
+        }
+
+        // Vẽ quả châu nhấp nháy
+        this.ornaments.forEach(o => {
+            const alpha = 0.5 + 0.5 * Math.sin(time * 0.005 + o.phase);
+            ctx.save();
+            ctx.fillStyle = o.color;
+            ctx.globalAlpha = alpha;
+            ctx.shadowColor = o.color;
+            ctx.shadowBlur = 10;
+            ctx.beginPath();
+            ctx.arc(o.x, o.y, o.r, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.restore();
+        });
+    }
+
+    drawStar(ctx, cx, cy, spikes, r0, r1) {
+        ctx.save();
+        ctx.fillStyle = "#ffd700";
+        ctx.shadowColor = "#ffd700";
+        ctx.shadowBlur = 40;
+        ctx.beginPath();
+        let rot = Math.PI / 2 * 3;
+        let x = cx;
+        let y = cy;
+        let step = Math.PI / spikes;
+
+        ctx.moveTo(cx, cy - r0);
+        for (let i = 0; i < spikes; i++) {
+            x = cx + Math.cos(rot) * r0;
+            y = cy + Math.sin(rot) * r0;
+            ctx.lineTo(x, y);
+            rot += step;
+
+            x = cx + Math.cos(rot) * r1;
+            y = cy + Math.sin(rot) * r1;
+            ctx.lineTo(x, y);
+            rot += step;
+        }
+        ctx.lineTo(cx, cy - r0);
+        ctx.closePath();
+        ctx.fill();
+        ctx.restore();
+    }
+}
+
+// --- MAIN APPLICATION LOGIC ---
+
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+const uiIntro = document.getElementById('intro-screen');
+const uiMain = document.getElementById('main-ui');
+const msgContent = document.getElementById('message-content');
+const audio = document.getElementById('bg-music');
+const btnMute = document.getElementById('btn-mute');
+
+let width, height, pixelRatio;
+let animationId;
+let msgIndex = 0;
+let isPlaying = false;
+
+// Khởi tạo các đối tượng
+const tree = new ChristmasTree();
+const floaters = [];
 const fireworks = [];
-function spawnFirework(x, y) {
-  const colors = ['#ffc0cb', '#f5c37a', '#87ceeb', '#ffd700', '#ff69b4'];
-  const particleCount = 30 + Math.random()*20;
-  for(let i=0; i<particleCount; i++) {
-    const a = Math.random()*Math.PI*2, s = Math.random()*4+2;
-    fireworks.push({
-        x, y, 
-        vx: Math.cos(a)*s, vy: Math.sin(a)*s, 
-        life: 1, decay: 0.015 + Math.random()*0.02,
-        color: colors[Math.floor(Math.random()*colors.length)],
-        size: 2 + Math.random()*3
+
+// Hàm khởi tạo hệ thống
+function init() {
+    resize();
+    window.addEventListener('resize', resize);
+    
+    // Tạo các vật thể bay
+    for(let i=0; i<CONFIG.floaterCount; i++) {
+        floaters.push(new Floater(width, height));
+    }
+
+    // Sự kiện nút
+    document.getElementById('btn-start').addEventListener('click', startGame);
+    document.getElementById('btn-next').addEventListener('click', (e) => {
+        e.stopPropagation(); // Ngăn click xuyên xuống canvas
+        nextMessage();
+        createFirework(width/2, height * 0.3); // Nổ pháo hoa trên cao
     });
-  }
-}
-function drawFireworks() {
-    fireworks.forEach((p,i) => {
-        p.x+=p.vx; p.y+=p.vy; p.vy+=0.08; // Trọng lực
-        p.life -= p.decay;
-        ctx.globalAlpha = p.life; ctx.fillStyle = p.color;
-        ctx.beginPath(); ctx.arc(p.x, p.y, p.size*p.life, 0, Math.PI*2); ctx.fill();
-        if(p.life<=0) fireworks.splice(i,1);
+
+    document.getElementById('btn-mute').addEventListener('click', () => {
+        audio.muted = !audio.muted;
+        btnMute.textContent = audio.muted ? '🔇' : '🔊';
     });
-    ctx.globalAlpha=1;
-}
 
-
-// ===== HỆ THỐNG 3: CÂY THÔNG SINH ĐỘNG (Thêm quả châu) =====
-let treeScale, cx, cy, treePath = [], ornaments = [];
-
-function buildTreeGeometry() {
-  treeScale = Math.min(W, H) * 0.5; cx = W/2; cy = H * 0.6;
-  treePath = []; ornaments = [];
-
-  // Hàm tạo dáng cây bầu bĩnh
-  const wFn = t => {
-      const b = 0.05 + 0.35*Math.pow(t,0.9);
-      const n = 0.15*Math.exp(-Math.pow((t-0.3)/0.1,2)) + 0.3*Math.exp(-Math.pow((t-0.7)/0.15,2));
-      return Math.max(0.05, b + n - 0.08*Math.exp(-Math.pow((t-0.55)/0.08,2)));
-  };
-
-  // Tạo đường viền
-  for(let i=0; i<=120; i++){ let t=i/120; treePath.push({x:cx-wFn(t)*treeScale,y:cy+(-0.65+1.1*t)*treeScale}); }
-  for(let i=0; i<=60; i++){ let u=i/60; treePath.push({x:cx+(-wFn(1)*1.5+wFn(1)*3*u)*treeScale,y:cy+(0.45+0.04*Math.sin(u*Math.PI))*treeScale}); }
-  for(let i=0; i<=120; i++){ let t=i/120; treePath.push({x:cx+wFn(1-t)*treeScale,y:cy+(-0.65+1.1*(1-t))*treeScale}); }
-
-  // Tạo quả châu trang trí (Ornaments)
-  for(let i=0; i<40; i++) {
-      const t = Math.random()*0.85 + 0.1; // Vị trí dọc thân cây
-      const side = Math.random() > 0.5 ? 1 : -1;
-      const w = wFn(t) * treeScale * (0.2 + Math.random()*0.7); // Vị trí ngang bên trong
-      ornaments.push({
-          x: cx + w*side, 
-          y: cy + (-0.65 + 1.1*t)*treeScale,
-          r: 4 + Math.random()*5,
-          hue: Math.random()*360,
-          phase: Math.random()*Math.PI*2
-      });
-  }
-}
-
-function drawTree(now) {
-    // Vẽ đường viền phát sáng
-    ctx.strokeStyle = "#f5c37a"; ctx.lineWidth = 5; ctx.lineCap = "round";
-    ctx.shadowColor = "#ffc0cb"; ctx.shadowBlur = 30;
-    ctx.beginPath(); ctx.moveTo(treePath[0].x, treePath[0].y);
-    treePath.forEach(p => ctx.lineTo(p.x, p.y)); ctx.stroke(); ctx.shadowBlur = 0;
-
-    // Vẽ ngôi sao đỉnh
-    ctx.fillStyle="#ffd700"; ctx.shadowColor="#ffd700"; ctx.shadowBlur=40;
-    drawStar(cx, cy-0.65*treeScale, 5, treeScale*0.12, treeScale*0.06); ctx.fill(); ctx.shadowBlur=0;
-
-    // Vẽ quả châu nhấp nháy
-    ornaments.forEach(o => {
-        const flicker = 0.6 + 0.4*Math.sin(now*0.004 + o.phase);
-        ctx.fillStyle = `hsla(${o.hue}, 80%, 60%, ${flicker})`;
-        ctx.shadowColor = ctx.fillStyle; ctx.shadowBlur = 15*flicker;
-        ctx.beginPath(); ctx.arc(o.x, o.y, o.r, 0, Math.PI*2); ctx.fill();
+    // Click vào canvas nổ pháo hoa
+    canvas.addEventListener('mousedown', (e) => {
+        createFirework(e.clientX, e.clientY);
     });
-    ctx.shadowBlur=0;
-}
-function drawStar(cx,cy,spikes,r0,r1){ctx.beginPath();let rot=Math.PI/2*3,x,y,step=Math.PI/spikes;for(let i=0;i<spikes;i++){x=cx+Math.cos(rot)*r0;y=cy+Math.sin(rot)*r0;ctx.lineTo(x,y);rot+=step;x=cx+Math.cos(rot)*r1;y=cy+Math.sin(rot)*r1;ctx.lineTo(x,y);rot+=step;}ctx.lineTo(cx,cy-r0);ctx.closePath();}
+    
+    // Support mobile touch
+    canvas.addEventListener('touchstart', (e) => {
+        const touch = e.touches[0];
+        createFirework(touch.clientX, touch.clientY);
+    }, {passive: false});
 
-
-// ===== VÒNG LẶP CHÍNH =====
-function loop(now) {
-  ctx.clearRect(0,0,W,H);
-  if(started) {
-      drawFloaters(now);   // 1. Vẽ nền bay lượn
-      drawTree(now);       // 2. Vẽ cây sinh động
-      drawFireworks();     // 3. Vẽ pháo hoa (nếu có)
-  }
-  requestAnimationFrame(loop);
+    loop();
 }
 
-
-// ===== XỬ LÝ SỰ KIỆN =====
+// Xử lý Resize màn hình
 function resize() {
-  W = window.innerWidth; H = window.innerHeight;
-  DPR = Math.min(2, window.devicePixelRatio||1);
-  canvas.width = W*DPR; canvas.height = H*DPR; ctx.scale(DPR, DPR);
-  buildTreeGeometry(); initFloaters();
+    pixelRatio = window.devicePixelRatio || 1;
+    width = window.innerWidth;
+    height = window.innerHeight;
+    
+    canvas.width = width * pixelRatio;
+    canvas.height = height * pixelRatio;
+    ctx.scale(pixelRatio, pixelRatio);
+    
+    // Tính lại dáng cây cho phù hợp màn hình mới
+    tree.rebuild(width, height);
 }
 
-startBtn.addEventListener("click", () => {
-  started = true;
-  startEl.classList.add("hide");
-  msgContainer.classList.remove("hide");
-  showMessage(); // Hiện tin nhắn đầu tiên
-  audio.play().catch(()=>{});
-  spawnFirework(W/2, H/2); // Bắn pháo hoa mở màn
-});
+// Bắt đầu ứng dụng
+function startGame() {
+    uiIntro.classList.add('hidden');
+    uiMain.classList.remove('hidden');
+    isPlaying = true;
+    
+    // Thử phát nhạc
+    audio.play().then(() => {
+        btnMute.textContent = '🔊';
+    }).catch(err => {
+        console.log("Autoplay prevented");
+        btnMute.textContent = '🔇';
+    });
 
-nextMsgBtn.addEventListener("click", (e) => {
-    e.stopPropagation(); // Ngăn không cho click xuyên qua canvas
-    msgIndex++; 
     showMessage();
-    spawnFirework(W/2, H*0.8); // Pháo hoa khi chuyển tin
-});
+    createFirework(width/2, height/2); // Pháo hoa chào mừng
+}
 
-// Click vào canvas để bắn pháo hoa
-canvas.addEventListener("pointerdown", e => spawnFirework(e.clientX, e.clientY));
-muteBtn.addEventListener("click", () => { audio.muted = !audio.muted; muteBtn.textContent = audio.muted ? "🔇" : "🔊"; });
+// Hiển thị lời chúc
+function showMessage() {
+    if(msgIndex >= MESSAGES.length) msgIndex = 0;
+    const msg = MESSAGES[msgIndex];
+    
+    // Hiệu ứng Fade out/in
+    msgContent.style.animation = 'none';
+    msgContent.offsetHeight; /* trigger reflow */
+    msgContent.style.animation = 'textPop 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
+    
+    msgContent.innerHTML = `
+        <span class="msg-line-1">${msg.l1}</span>
+        <span class="msg-line-2">${msg.l2}</span>
+    `;
+}
 
-window.addEventListener("resize", resize);
-resize();
-requestAnimationFrame(loop);
+function nextMessage() {
+    msgIndex++;
+    showMessage();
+}
+
+// Tạo pháo hoa
+function createFirework(x, y) {
+    const colors = ['#ff6b6b', '#feca57', '#48dbfb', '#ff9ff3', '#54a0ff'];
+    const color = colors[Math.floor(Math.random() * colors.length)];
+    for(let i=0; i<CONFIG.particleCount; i++) {
+        fireworks.push(new FireworkParticle(x, y, color));
+    }
+}
+
+// Vòng lặp chính (Game Loop)
+function loop() {
+    const now = Date.now();
+    
+    // Xóa màn hình
+    ctx.clearRect(0, 0, width, height);
+
+    // 1. Vẽ Vật thể bay (Nền)
+    floaters.forEach(f => {
+        f.update(width, height);
+        f.draw(ctx);
+    });
+
+    // 2. Vẽ Cây thông (nếu đã bắt đầu)
+    if(isPlaying) {
+        tree.draw(ctx, now);
+    }
+
+    // 3. Vẽ Pháo hoa
+    for (let i = fireworks.length - 1; i >= 0; i--) {
+        fireworks[i].update();
+        fireworks[i].draw(ctx);
+        if (fireworks[i].life <= 0) {
+            fireworks.splice(i, 1);
+        }
+    }
+
+    requestAnimationFrame(loop);
+}
+
+// Khởi chạy
+init();

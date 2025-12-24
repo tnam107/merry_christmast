@@ -1,42 +1,45 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="vi">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
-  <title>Merry Christmas! 🎄</title>
-
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@600;700&family=Mountains+of+Christmas:wght@700&display=swap" rel="stylesheet">
-
-  <link rel="stylesheet" href="style.css" />
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Merry Christmas My Crush 🎄</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Mountains+of+Christmas:wght@400;700&family=Patrick+Hand&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <div id="start" class="start">
-    <div class="sub-title">Merry Christmas</div>
-    <button id="startBtn" class="startBtn">
-      <span class="dot"></span>
-      <span class="text">BẮT ĐẦU NÈ</span>
-    </button>
-    <div class="hint-text">(Nhớ bật loa và bấm thử lên màn hình nhé!)</div>
-  </div>
 
-  <canvas id="c"></canvas>
+    <div id="intro-screen" class="screen active">
+        <h1 class="title">Merry Christmas</h1>
+        <button id="btn-start" class="btn-primary">
+            <span>🎁 BẮT ĐẦU NÈ</span>
+        </button>
+        <p class="hint">(Nhớ bật loa và click thử lên màn hình nhé!)</p>
+    </div>
 
-  <div id="msgContainer" class="msg-container hide">
-      <div id="messageBox" class="message-box">
+    <canvas id="canvas"></canvas>
+
+    <div id="main-ui" class="screen hidden">
+        <div class="message-container">
+            <div id="message-content" class="message-content">
+                </div>
         </div>
-      <button id="nextMsgBtn" class="next-msg-btn">
-        Cậu bấm vào đây ii 👉👈
-      </button>
-  </div>
 
+        <div class="controls">
+            <button id="btn-next" class="btn-secondary">
+                Cậu bấm vào đây ii 👉👈
+            </button>
+        </div>
+    </div>
 
-  <div class="volUI">
-    <button id="muteBtn" class="iconBtn">🔊</button>
-  </div>
+    <button id="btn-mute" class="btn-icon">🔇</button>
 
-  <audio id="audio" src="music.mp3" preload="auto"></audio>
-  <script src="app.js"></script>
+    <audio id="bg-music" src="music.mp3" loop></audio>
+
+    <script src="app.js"></script>
 </body>
 </html>

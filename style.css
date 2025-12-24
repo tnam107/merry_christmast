@@ -1,115 +1,195 @@
 :root {
-  --glow: #f5c37a;    /* Vàng ấm */
-  --pink: #ffc0cb;    /* Hồng phấn */
-  --text: #ffffff;
-  --font-title: 'Mountains of Christmas', serif;
-  --font-msg: 'Dancing Script', cursive;
+    --primary-color: #f5c37a; /* Vàng ánh kim */
+    --accent-color: #ff6b6b;  /* Đỏ hồng */
+    --text-color: #ffffff;
+    --font-title: 'Mountains of Christmas', cursive;
+    --font-body: 'Patrick Hand', cursive;
 }
 
-* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-html, body { height: 100%; margin: 0; padding: 0; overflow: hidden; }
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    -webkit-tap-highlight-color: transparent;
+}
 
 body {
-  /* Nền tối kết hợp ảnh họa tiết nhẹ */
-  background: radial-gradient(circle at center, #1b2550 0%, #0a1030 50%, #050814 100%);
-  font-family: system-ui, sans-serif;
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
+    background-color: #0f2027;
+    /* BACKGROUND SỐNG ĐỘNG: Ảnh họa tiết + Lớp phủ tối để dễ đọc chữ */
+    background-image: 
+        linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.6)),
+        url('https://img.freepik.com/free-vector/dark-blue-memphis-pattern-background_53876-99664.jpg'); 
+    background-size: cover;
+    background-position: center;
+    font-family: var(--font-body);
 }
 
-/* Canvas nằm dưới cùng để không che nút bấm */
-#c {
-  position: fixed; inset: 0; z-index: 0;
-  touch-action: none; /* Ngăn chặn hành động chạm mặc định trên mobile */
-}
-
-/* --- Màn hình Start --- */
-.start {
-  position: fixed; inset: 0; display: flex; flex-direction: column;
-  align-items: center; justify-content: center; gap: 25px;
-  background: rgba(5,8,20,0.85); backdrop-filter: blur(8px);
-  transition: opacity 0.6s ease, visibility 0.6s; z-index: 100;
-}
-.start.hide { opacity: 0; visibility: hidden; pointer-events: none; }
-
-.sub-title {
-  font-family: var(--font-title); font-size: 50px;
-  color: var(--glow); text-shadow: 0 0 25px var(--pink); letter-spacing: 3px;
-}
-
-.startBtn {
-  display: inline-flex; align-items: center; gap: 15px; padding: 16px 32px;
-  border-radius: 50px; border: 2px solid var(--glow);
-  background: rgba(255,255,255,0.05); color: var(--text);
-  font-size: 18px; font-weight: 700; cursor: pointer; transition: all 0.3s ease;
-  box-shadow: 0 0 15px rgba(245, 195, 122, 0.3);
-}
-.startBtn:hover { transform: scale(1.05); background: rgba(245, 195, 122, 0.15); box-shadow: 0 0 30px var(--glow); }
-.startBtn .dot { width: 14px; height: 14px; background: var(--pink); border-radius: 50%; animation: pulse 1.2s infinite alternate; }
-.hint-text { color: #aaa; font-style: italic; font-size: 14px; margin-top: -10px;}
-
-/* --- Khu vực Lời chúc & Nút bấm (Căn giữa chuẩn) --- */
-.msg-container {
+/* Canvas phủ kín màn hình */
+#canvas {
     position: fixed;
-    bottom: 40px; /* Cách đáy */
-    left: 50%;
-    transform: translateX(-50%);
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 1;
+    cursor: crosshair; /* Con trỏ hình dấu cộng để ngắm bắn pháo hoa */
+}
+
+/* --- Màn hình Intro --- */
+.screen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 20px;
-    z-index: 50; /* Nổi lên trên canvas */
-    transition: opacity 0.5s, visibility 0.5s;
-    width: 90%; /* Đảm bảo không bị quá rộng trên mobile */
-    max-width: 600px;
-    pointer-events: none; /* Để click xuyên qua vùng trống vào canvas */
+    justify-content: center;
+    transition: opacity 0.8s ease, visibility 0.8s;
+    z-index: 10;
 }
-.msg-container.hide { opacity: 0; visibility: hidden; }
 
-/* Hộp chứa lời chúc */
-.message-box {
+.screen.hidden {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none; /* Quan trọng: để click xuyên qua khi ẩn */
+}
+
+.title {
+    font-family: var(--font-title);
+    font-size: 4rem;
+    color: var(--primary-color);
+    text-shadow: 0 0 20px var(--accent-color);
+    animation: titleGlow 2s infinite alternate;
+    margin-bottom: 2rem;
     text-align: center;
-    color: var(--glow);
-    text-shadow: 0 0 10px rgba(0,0,0,0.8);
-    pointer-events: auto; /* Cho phép tương tác (ví dụ bôi đen text) */
 }
-.msg-line1 { font-family: var(--font-msg); font-size: 38px; font-weight: 700; margin-bottom: 8px; display: block; text-shadow: 0 0 20px var(--pink);}
-.msg-line2 { font-family: system-ui, sans-serif; font-size: 18px; color: #e0e0e0; display: block;}
 
-/* Nút chuyển tin nhắn */
-.next-msg-btn {
-    pointer-events: auto; /* Bắt buộc có để nhận click */
-    padding: 12px 28px;
-    background: rgba(255, 192, 203, 0.15);
-    border: 2px solid var(--pink);
-    border-radius: 30px;
-    color: var(--text);
-    font-family: system-ui, sans-serif;
-    font-weight: 600; font-size: 16px;
+/* Nút Bắt đầu */
+.btn-primary {
+    padding: 15px 40px;
+    font-size: 1.5rem;
+    font-family: var(--font-title);
+    font-weight: bold;
+    color: white;
+    background: transparent;
+    border: 3px solid var(--primary-color);
+    border-radius: 50px;
     cursor: pointer;
-    backdrop-filter: blur(5px);
-    box-shadow: 0 0 15px rgba(255, 192, 203, 0.4);
-    animation: bounceGlow 2s infinite ease-in-out;
-    transition: all 0.3s;
+    box-shadow: 0 0 15px var(--primary-color);
+    transition: transform 0.2s, background 0.3s;
 }
-.next-msg-btn:hover { background: var(--pink); color: #000; transform: scale(1.05); }
-.next-msg-btn:active { transform: scale(0.95); }
 
-
-/* --- Nút âm thanh --- */
-.volUI {
-  position: fixed; right: 20px; top: 20px; z-index: 90;
-  background: rgba(0,0,0,0.4); padding: 8px; border-radius: 50%;
+.btn-primary:hover {
+    background: rgba(245, 195, 122, 0.2);
+    transform: scale(1.1);
 }
-.iconBtn { background: none; border: none; color: #fff; font-size: 24px; cursor: pointer; }
 
-/* --- Animations --- */
-@keyframes pulse { from { box-shadow: 0 0 10px var(--pink); } to { box-shadow: 0 0 25px var(--glow), 0 0 40px var(--pink); transform: scale(1.2); } }
-@keyframes bounceGlow { 0%, 100% { transform: scale(1); box-shadow: 0 0 15px var(--pink); } 50% { transform: scale(1.05); box-shadow: 0 0 25px var(--glow); } }
+.hint {
+    margin-top: 15px;
+    color: #bbb;
+    font-size: 1rem;
+    font-style: italic;
+}
 
-/* Responsive cho màn hình nhỏ */
+/* --- Giao diện chính (Main UI) --- */
+#main-ui {
+    justify-content: flex-end; /* Đẩy nội dung xuống dưới */
+    padding-bottom: 50px;
+    pointer-events: none; /* Cho phép click xuyên qua vùng trống */
+}
+
+.message-container {
+    width: 90%;
+    max-width: 600px;
+    text-align: center;
+    margin-bottom: 20px;
+    pointer-events: auto; /* Cho phép bôi đen chữ */
+}
+
+.message-content {
+    color: var(--primary-color);
+    text-shadow: 0 2px 5px rgba(0,0,0,0.8);
+}
+
+.msg-line-1 {
+    display: block;
+    font-family: var(--font-title); /* Font giống chữ Merry Christmas */
+    font-size: 2.8rem;
+    font-weight: 700;
+    margin-bottom: 10px;
+    color: var(--primary-color);
+    text-shadow: 0 0 15px var(--accent-color);
+}
+
+.msg-line-2 {
+    display: block;
+    font-size: 1.5rem;
+    color: #fff;
+    font-weight: 400;
+}
+
+/* Nút "Cậu bấm vào đây" */
+.btn-secondary {
+    pointer-events: auto; /* Kích hoạt click */
+    background: linear-gradient(45deg, #ff9a9e 0%, #fecfef 99%, #fecfef 100%);
+    border: none;
+    padding: 12px 30px;
+    border-radius: 30px;
+    font-size: 1.2rem;
+    font-family: var(--font-body);
+    font-weight: bold;
+    color: #333;
+    cursor: pointer;
+    box-shadow: 0 5px 15px rgba(255, 107, 107, 0.4);
+    animation: bounce 2s infinite;
+    transition: transform 0.2s;
+}
+
+.btn-secondary:active {
+    transform: scale(0.95);
+}
+
+/* Nút Âm thanh */
+.btn-icon {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: rgba(0,0,0,0.5);
+    border: 1px solid rgba(255,255,255,0.3);
+    color: white;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    font-size: 1.2rem;
+    cursor: pointer;
+    z-index: 100;
+}
+
+/* Animations */
+@keyframes titleGlow {
+    from { text-shadow: 0 0 10px var(--accent-color); transform: scale(1); }
+    to { text-shadow: 0 0 30px var(--primary-color), 0 0 10px white; transform: scale(1.05); }
+}
+
+@keyframes bounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-10px); }
+}
+
+@keyframes textPop {
+    0% { opacity: 0; transform: scale(0.8); }
+    100% { opacity: 1; transform: scale(1); }
+}
+
+/* Responsive */
 @media (max-width: 600px) {
-    .sub-title { font-size: 40px; }
-    .msg-line1 { font-size: 32px; }
-    .msg-line2 { font-size: 16px; }
-    .next-msg-btn { font-size: 14px; padding: 10px 20px; }
-    .msg-container { bottom: 30px; }
+    .title { font-size: 3rem; }
+    .msg-line-1 { font-size: 2.2rem; }
+    .msg-line-2 { font-size: 1.2rem; }
+    #main-ui { padding-bottom: 80px; } /* Đẩy cao lên chút trên mobile */
 }
