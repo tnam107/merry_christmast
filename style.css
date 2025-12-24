@@ -1,64 +1,86 @@
 :root {
-  --bg1: #050814;
-  --bg2: #0a1030;
-  --glow: #f5c37a; /* Vàng ấm */
-  --accent: #e0f7fa; /* Xanh trắng nhạt */
-  --text: rgba(255, 255, 255, 0.95);
-}
+    --glow: #f5c37a;
+    --pink: #ffc0cb;
+    --text: rgba(255, 255, 255, 0.95);
+    --font-festive: 'Mountains of Christmas', serif;
+  }
+  
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; }
+  
+  body {
+    overflow: hidden;
+    /* BACKGROUND SỐNG ĐỘNG HƠN: Dùng ảnh họa tiết và phủ một lớp tối để dễ đọc chữ */
+    background: linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.6)), 
+                url('https://img.freepik.com/free-vector/hand-drawn-christmas-pattern-design_23-2149744640.jpg');
+    background-size: cover;
+    background-position: center;
+    font-family: system-ui, sans-serif;
+  }
+  
+  #c { position: fixed; inset: 0; z-index: 0; }
+  
+  /* Màn hình Start */
+  .start {
+    position: fixed; inset: 0; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; gap: 20px;
+    background: rgba(0,0,0,0.75); backdrop-filter: blur(5px);
+    transition: opacity 0.8s ease, visibility 0.8s; z-index: 20;
+  }
+  .start.hide { opacity: 0; visibility: hidden; pointer-events: none; }
+  
+  .sub-title {
+    font-family: var(--font-festive); font-size: 48px;
+    color: var(--glow); text-shadow: 0 0 20px var(--pink);
+    letter-spacing: 2px;
+  }
+  
+  .startBtn {
+    display: inline-flex; align-items: center; gap: 15px; padding: 15px 30px;
+    border-radius: 50px; border: 2px solid var(--glow);
+    background: rgba(255,255,255,0.1); color: var(--text);
+    font-size: 18px; font-weight: bold; cursor: pointer; transition: all 0.3s;
+  }
+  .startBtn:hover { background: var(--glow); color: #000; box-shadow: 0 0 30px var(--glow); }
+  .startBtn .dot { width: 12px; height: 12px; background: var(--pink); border-radius: 50%; animation: pulse 1s infinite; }
+  
+  .hint-text { color: #ccc; font-style: italic; font-size: 14px; }
+  
+  /* NÚT CHUYỂN TIN NHẮN MỚI */
+  .next-msg-btn {
+      position: fixed;
+      bottom: 30px;
+      left: 50%;
+      transform: translateX(-50%);
+      padding: 12px 24px;
+      background: rgba(255, 192, 203, 0.2);
+      border: 2px solid var(--pink);
+      border-radius: 30px;
+      color: var(--text);
+      font-family: var(--font-festive);
+      font-size: 20px;
+      cursor: pointer;
+      z-index: 15;
+      backdrop-filter: blur(5px);
+      box-shadow: 0 0 15px rgba(255, 192, 203, 0.5);
+      animation: bounceGlow 2s infinite ease-in-out;
+      transition: opacity 0.5s, visibility 0.5s;
+  }
+  .next-msg-btn:hover {
+      background: var(--pink); color: #000;
+  }
+  .next-msg-btn.hide { opacity: 0; visibility: hidden; pointer-events: none; }
 
-* { box-sizing: border-box; }
-html, body { height: 100%; margin: 0; }
-
-body {
-  overflow: hidden;
-  background: radial-gradient(900px 700px at 30% 20%, #1b2550 0%, var(--bg2) 35%, var(--bg1) 80%);
-  font-family: system-ui, -apple-system, sans-serif;
-}
-
-#c { position: fixed; inset: 0; z-index: 0; pointer-events: none; }
-
-.start {
-  position: fixed; inset: 0; display: flex; flex-direction: column;
-  align-items: center; justify-content: center; gap: 20px;
-  background: rgba(5, 8, 20, 0.7); backdrop-filter: blur(8px);
-  transition: opacity 800ms ease, visibility 800ms ease; z-index: 10;
-}
-
-.start.hide { opacity: 0; visibility: hidden; pointer-events: none; }
-
-.sub-title {
-  font-family: 'Mountains of Christmas', serif; font-size: 42px;
-  color: var(--glow); text-shadow: 0 0 15px rgba(245, 195, 122, 0.6);
-}
-
-.startBtn {
-  display: inline-flex; align-items: center; gap: 15px; padding: 14px 28px;
-  border-radius: 999px; border: 1.5px solid var(--glow);
-  background: rgba(255, 255, 255, 0.05); color: var(--text);
-  cursor: pointer; transition: all 0.4s;
-}
-
-.startBtn:hover {
-  background: rgba(245, 195, 122, 0.15); transform: scale(1.05);
-  box-shadow: 0 0 20px rgba(245, 195, 122, 0.3);
-}
-
-.startBtn .dot {
-  width: 10px; height: 10px; border-radius: 50%;
-  background: var(--glow); animation: pulse 1.5s infinite;
-}
-
-@keyframes pulse {
-  0%, 100% { transform: scale(1); opacity: 0.8; }
-  50% { transform: scale(1.3); opacity: 1; }
-}
-
-.volUI {
-  position: fixed; right: 20px; top: 20px; display: flex;
-  align-items: center; gap: 10px; padding: 8px 12px;
-  border-radius: 999px; background: rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(10px); z-index: 20;
-}
-
-.iconBtn { background: none; border: none; color: var(--text); cursor: pointer; }
-.volUI input { width: 80px; accent-color: var(--glow); }
+  @keyframes pulse { 0%, 100% { transform: scale(1); opacity: 0.8; } 50% { transform: scale(1.4); opacity: 1; } }
+  @keyframes bounceGlow {
+      0%, 100% { transform: translateX(-50%) scale(1); box-shadow: 0 0 15px var(--pink); }
+      50% { transform: translateX(-50%) scale(1.05); box-shadow: 0 0 30px var(--glow); }
+  }
+  
+  .volUI {
+    position: fixed; right: 20px; top: 20px; display: flex;
+    align-items: center; gap: 10px; padding: 8px 12px;
+    border-radius: 30px; background: rgba(0,0,0,0.5); z-index: 30;
+  }
+  .iconBtn { background: none; border: none; color: #fff; font-size: 20px; cursor: pointer; }
+  .volUI input { width: 80px; accent-color: var(--glow); }

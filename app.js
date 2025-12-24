@@ -1,151 +1,233 @@
 const canvas = document.getElementById("c");
-const ctx = canvas.getContext("2d", { alpha: true });
+const ctx = canvas.getContext("2d");
 const startEl = document.getElementById("start");
 const startBtn = document.getElementById("startBtn");
+const nextMsgBtn = document.getElementById("nextMsgBtn"); // Nút bấm mới
 const audio = document.getElementById("audio");
 const vol = document.getElementById("vol");
 const muteBtn = document.getElementById("muteBtn");
 
-// ===== LỜI CHÚC (NHẸ NHÀNG, TINH TẾ) =====
+// ===== CẤU HÌNH =====
+// Danh sách lời chúc (Đã thêm nhiều hơn)
 const messages = [
-  { line1: "Merry Christmas! 🎄", line2: "Giáng Sinh vui vẻ và ấm áp nhé cậu." },
-  { line1: "Tớ thấy rất vui...", line2: "...vì mùa Noel này có thêm một người bạn như cậu." },
-  { line1: "Chúc cậu luôn rạng rỡ,", line2: "Lúc nào cũng giữ được nụ cười trên môi nhé." },
-  { line1: "Cảm ơn cậu rất nhiều,", line2: "Vì đã luôn mang lại năng lượng tích cực cho tớ." },
-  { line1: "Dù bận rộn đến mấy,", line2: "Cũng nhớ dành thời gian để yêu chiều bản thân mình nha." },
-  { line1: "Mong là món quà nhỏ này...", line2: "...có thể làm cậu mỉm cười một chút. ✨" }
+  { l1: "Merry Christmas! 🎄", l2: "Giáng Sinh vui vẻ nha cậu." },
+  { l1: "Tớ có một điều ước nhỏ...", l2: "...là cậu luôn được hạnh phúc." },
+  { l1: "Cảm ơn cậu vì đã xuất hiện", l2: "và làm thế giới của tớ rực rỡ hơn. ✨" },
+  { l1: "Chúc cậu xinh đẹp, rạng rỡ", l2: "Không chỉ Noel mà cả năm luôn nhé!" },
+  { l1: "Đừng quên mặc ấm nha,", l2: "Trời lạnh lắm đó! ❄️" },
+  { l1: "Mong mọi điều tốt đẹp nhất", l2: "sẽ đến với cậu trong năm mới." },
+  { l1: "Món quà này tớ code tặng cậu", l2: "Hy vọng cậu sẽ thích nó! ❤️" },
+  { l1: "Merry Christmas My Crush!", l2: "(Cậu cười lên xinh lắm á!)" }
 ];
 
-const T_DRAW = 4.4, T_HOLD_MSG = 3.8, T_TRANS_MSG = 1.0;
-const T_TOTAL = T_DRAW + (T_HOLD_MSG + T_TRANS_MSG) * messages.length;
-let started = false, t0 = 0, lastNow = 0;
-const TOP_Y = -0.6, BOT_Y = 0.48, STAR_R_OUT = 0.085, STAR_R_IN = 0.037;
-
-// Resize
+let started = false;
+let msgIndex = 0; // Biến theo dõi tin nhắn hiện tại (không dùng thời gian nữa)
 let W, H, DPR;
-function resize() {
-  DPR = Math.min(2, window.devicePixelRatio || 1);
-  W = window.innerWidth; H = window.innerHeight;
-  canvas.width = Math.floor(W * DPR); canvas.height = Math.floor(H * DPR);
-  canvas.style.width = W + "px"; canvas.style.height = H + "px";
-  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
-  buildSceneGeometry();
-}
-window.addEventListener("resize", resize);
 
-// Background Stars
-const bgStars = new Float32Array(240 * 4);
-for(let i=0; i<240; i++) {
-  bgStars[i*4+0] = Math.random(); bgStars[i*4+1] = Math.random();
-  bgStars[i*4+2] = 0.6 + Math.random()*1.6; bgStars[i*4+3] = 0.2 + Math.random()*0.5;
+// ===== HỆ THỐNG "BAY NHẢY" (Hovering Elements) =====
+const floaters = [];
+const floaterIcons = ['❄️', '🌟', '🍂', '🌸', '✨'];
+
+function initFloaters() {
+    floaters.length = 0;
+    const count = 50; // Số lượng phần tử bay
+    for(let i=0; i<count; i++) {
+        floaters.push({
+            x: Math.random() * W,
+            y: Math.random() * H,
+            speedY: 0.5 + Math.random() * 1.5, // Tốc độ rơi
+            speedX: (Math.random() - 0.5) * 1, // Tốc độ bay ngang
+            size: 10 + Math.random() * 20,
+            icon: floaterIcons[Math.floor(Math.random() * floaterIcons.length)],
+            rot: Math.random() * Math.PI * 2,
+            rotSpeed: (Math.random() - 0.5) * 0.1
+        });
+    }
 }
 
-function fillBackground(t) {
-  const g = ctx.createRadialGradient(W*0.3, H*0.2, 0, W*0.3, H*0.2, Math.max(W,H)*0.95);
-  g.addColorStop(0, "#1b2550"); g.addColorStop(1, "#050814");
-  ctx.fillStyle = g; ctx.fillRect(0,0,W,H);
-  for(let i=0; i<240; i++) {
-    const tw = 0.5 + 0.5 * Math.sin(t * 1.2 + bgStars[i*4]);
-    ctx.globalAlpha = bgStars[i*4+3] * tw; ctx.fillStyle = "#fff";
-    ctx.fillRect(bgStars[i*4]*W, bgStars[i*4+1]*H, bgStars[i*4+2], bgStars[i*4+2]);
+function updateAndDrawFloaters() {
+    ctx.save();
+    ctx.textAlign = "center"; ctx.textBaseline = "middle";
+    floaters.forEach(f => {
+        // Cập nhật vị trí
+        f.y += f.speedY;
+        f.x += f.speedX + Math.sin(f.y * 0.01) * 0.5; // Bay lượn sóng nhẹ
+        f.rot += f.rotSpeed;
+
+        // Lặp lại khi ra khỏi màn hình
+        if(f.y > H + 50) { f.y = -50; f.x = Math.random() * W; }
+        if(f.x > W + 50) f.x = -50;
+        if(f.x < -50) f.x = W + 50;
+
+        // Vẽ
+        ctx.font = `${f.size}px serif`;
+        ctx.globalAlpha = 0.6;
+        ctx.translate(f.x, f.y);
+        ctx.rotate(f.rot);
+        ctx.fillText(f.icon, 0, 0);
+        ctx.rotate(-f.rot);
+        ctx.translate(-f.x, -f.y);
+    });
+    ctx.restore();
+}
+
+
+// ===== CÂY THÔNG SINH ĐỘNG HƠN =====
+let baseScale, cx, cy;
+let treePath = [];
+let ornaments = []; // Danh sách các quả châu trang trí
+
+function buildTree() {
+  baseScale = Math.min(W, H) * 0.55; cx = W/2; cy = H * 0.65;
+  treePath = [];
+  
+  // Hàm tạo dáng cây (đã điều chỉnh cho bầu bĩnh hơn chút)
+  const widthFn = t => {
+      const base = 0.04 + 0.35 * Math.pow(t, 0.9);
+      const notches = 0.15 * Math.exp(-Math.pow((t-0.3)/0.1,2)) + 0.3 * Math.exp(-Math.pow((t-0.7)/0.15,2));
+      return Math.max(0.04, base + notches - 0.08*Math.exp(-Math.pow((t-0.55)/0.08,2)));
+  };
+
+  // Xây dựng đường viền cây
+  for(let i=0; i<=150; i++) { let t=i/150; treePath.push({x: cx - widthFn(t)*baseScale, y: cy + (-0.65 + 1.1*t)*baseScale}); }
+  for(let i=0; i<=80; i++) { let u=i/80; treePath.push({x: cx + (-widthFn(1)*1.5 + widthFn(1)*3.0*u)*baseScale, y: cy + (0.45 + 0.03*Math.sin(u*Math.PI))*baseScale}); }
+  for(let i=0; i<=150; i++) { let t=i/150; treePath.push({x: cx + widthFn(1-t)*baseScale, y: cy + (-0.65 + 1.1*(1-t))*baseScale}); }
+
+  // Tạo quả châu trang trí ngẫu nhiên trên thân cây
+  ornaments = [];
+  for(let i=0; i<35; i++) {
+      let t = Math.random() * 0.9 + 0.05; // Vị trí dọc theo cây (tránh đỉnh và đáy quá sát)
+      let w = widthFn(t) * baseScale * (Math.random()*0.8); // Vị trí ngang ngẫu nhiên bên trong cây
+      let xStr = Math.random() > 0.5 ? 1 : -1;
+      ornaments.push({
+          x: cx + w * xStr,
+          y: cy + (-0.65 + 1.1*t)*baseScale,
+          r: 3 + Math.random()*5, // Kích thước
+          color: `hsl(${Math.random()*360}, 80%, 60%)`, // Màu ngẫu nhiên
+          phase: Math.random() * Math.PI * 2 // Pha nhấp nháy
+      });
   }
-  ctx.globalAlpha = 1;
 }
 
-// Tree Geometry
-function treeHalfWidth(t) {
-  const base = 0.035 + 0.3 * Math.pow(t, 0.92);
-  const b = 0.11 * Math.exp(-Math.pow((t-0.34)/0.1, 2)) + 0.26 * Math.exp(-Math.pow((t-0.74)/0.14, 2));
-  return Math.max(0.04, base + b - 0.07 * Math.exp(-Math.pow((t-0.56)/0.07, 2)));
+function drawTree(now) {
+    // Vẽ cây phát sáng
+    ctx.strokeStyle = "#f5c37a"; ctx.lineWidth = 4; ctx.lineCap = "round";
+    ctx.shadowColor = "#ffc0cb"; ctx.shadowBlur = 25;
+    ctx.beginPath(); ctx.moveTo(treePath[0].x, treePath[0].y);
+    treePath.forEach(p => ctx.lineTo(p.x, p.y));
+    ctx.stroke(); ctx.shadowBlur = 0;
+
+    // Vẽ ngôi sao đỉnh
+    const topY = cy - 0.65*baseScale;
+    ctx.fillStyle = "#ffd700"; ctx.shadowColor="#ffd700"; ctx.shadowBlur=30;
+    drawStar(cx, topY, 5, baseScale*0.1, baseScale*0.05);
+    ctx.fill(); ctx.shadowBlur=0;
+
+    // Vẽ quả châu trang trí (nhấp nháy)
+    ornaments.forEach(o => {
+        const intensity = 0.5 + 0.5 * Math.sin(now * 0.003 + o.phase);
+        ctx.globalAlpha = 0.8 + 0.2*intensity;
+        ctx.fillStyle = o.color;
+        ctx.shadowColor = o.color;
+        ctx.shadowBlur = 10 * intensity;
+        ctx.beginPath(); ctx.arc(o.x, o.y, o.r, 0, Math.PI*2); ctx.fill();
+    });
+    ctx.globalAlpha = 1; ctx.shadowBlur=0;
+}
+function drawStar(cx,cy,spikes,r0,r1){ctx.beginPath();let rot=Math.PI/2*3,x=cx,y=cy,step=Math.PI/spikes;for(let i=0;i<spikes;i++){x=cx+Math.cos(rot)*r0;y=cy+Math.sin(rot)*r0;ctx.lineTo(x,y);rot+=step;x=cx+Math.cos(rot)*r1;y=cy+Math.sin(rot)*r1;ctx.lineTo(x,y);rot+=step;}ctx.lineTo(cx,cy-r0);ctx.closePath();}
+
+
+// ===== VẼ CHỮ (Font mới & Logic mới) =====
+function drawMessage() {
+    if(msgIndex >= messages.length) msgIndex = 0; // Lặp lại khi hết
+    const msg = messages[msgIndex];
+
+    ctx.save(); ctx.textAlign = "center"; 
+    ctx.shadowColor = "rgba(0,0,0,0.5)"; ctx.shadowBlur = 5;
+
+    // Dùng font Mountains of Christmas cho đồng bộ và đẹp
+    const s1 = Math.min(60, W*0.1); 
+    ctx.font = `${s1}px 'Mountains of Christmas', cursive`;
+    ctx.fillStyle = "#f5c37a"; // Màu vàng sáng
+    ctx.fillText(msg.l1, W/2, H*0.82);
+
+    if(msg.l2) {
+      ctx.font = `${s1*0.6}px 'Mountains of Christmas', cursive`;
+      ctx.fillStyle = "#fff";
+      ctx.fillText(msg.l2, W/2, H*0.82 + s1*0.9);
+    }
+    ctx.restore();
 }
 
-let outlineX, outlineY, outlineN, starX, starY, starN, baseScale, cx, cy;
-function buildSceneGeometry() {
-  baseScale = Math.min(W, H) * 0.5; cx = W * 0.5; cy = H * 0.6;
-  const pts = [];
-  for(let i=0; i<=200; i++) { let t=i/200; pts.push({x: -treeHalfWidth(t)*baseScale, y: (TOP_Y + (BOT_Y-TOP_Y)*t)*baseScale}); }
-  for(let i=0; i<=100; i++) { let u=i/100; pts.push({x: (-treeHalfWidth(1)*1.6 + treeHalfWidth(1)*3.2*u)*baseScale, y: (BOT_Y + 0.02*Math.sin(u*Math.PI))*baseScale}); }
-  for(let i=0; i<=200; i++) { let t=i/200; pts.push({x: treeHalfWidth(1-t)*baseScale, y: (BOT_Y + (TOP_Y-BOT_Y)*t)*baseScale}); }
-  outlineN = pts.length; outlineX = new Float32Array(outlineN); outlineY = new Float32Array(outlineN);
-  pts.forEach((p, i) => { outlineX[i] = cx + p.x; outlineY[i] = cy + p.y; });
 
-  const sPts = []; const step = Math.PI/5; const sCx = cx, sCy = cy + TOP_Y*baseScale;
-  for(let i=0; i<11; i++) { const r = (i%2===0 ? STAR_R_OUT : STAR_R_IN)*baseScale; sPts.push({x: sCx + Math.cos(-Math.PI/2 + i*step)*r, y: sCy + Math.sin(-Math.PI/2 + i*step)*r}); }
-  starN = sPts.length; starX = new Float32Array(starN); starY = new Float32Array(starN);
-  sPts.forEach((p, i) => { starX[i] = p.x; starY[i] = p.y; });
-}
-
-function drawPath(X, Y, N, prog, color, lw) {
-  const n = Math.floor((N-1)*prog); if(n<2) return;
-  ctx.strokeStyle = color; ctx.lineWidth = lw; ctx.lineCap = "round";
-  ctx.shadowColor = color; ctx.shadowBlur = 10;
-  ctx.beginPath(); ctx.moveTo(X[0], Y[0]);
-  for(let i=1; i<=n; i++) ctx.lineTo(X[i], Y[i]);
-  ctx.stroke(); ctx.shadowBlur = 0;
-}
-
-function drawCenteredText(l1, l2, a, y) {
-  ctx.save(); ctx.globalAlpha = a; ctx.textAlign = "center"; ctx.fillStyle = "#fff";
-  ctx.shadowColor = "rgba(245, 195, 122, 0.8)"; ctx.shadowBlur = 20;
-  const s1 = Math.max(30, W*0.06); ctx.font = `600 ${s1}px 'Dancing Script', cursive`;
-  ctx.fillText(l1, W/2, y);
-  if(l2) {
-    ctx.font = `400 ${s1*0.4}px system-ui`; ctx.globalAlpha = a*0.7;
-    ctx.fillText(l2, W/2, y + s1*0.8);
-  }
-  ctx.restore();
-}
-
-// Fireworks
+// ===== PHÁO HOA (Hiệu ứng click) =====
 const fireworks = [];
 function spawnFirework(x, y) {
-  const parts = []; const hue = Math.random()*360;
-  for(let i=0; i<80; i++) {
-    const a = Math.random()*Math.PI*2, s = 2 + Math.random()*4;
-    parts.push({x, y, vx: Math.cos(a)*s, vy: Math.sin(a)*s, age: 0, life: 60+Math.random()*40});
+  const colors = ['#ffc0cb', '#f5c37a', '#e0f7fa', '#ffd700'];
+  const color = colors[Math.floor(Math.random()*colors.length)];
+  for(let i=0; i<40; i++) {
+    const a = Math.random()*Math.PI*2, s = Math.random()*5+2;
+    fireworks.push({x, y, vx:Math.cos(a)*s, vy:Math.sin(a)*s, life:1, color});
   }
-  fireworks.push({parts, hue});
+}
+function updateDrawFireworks() {
+    fireworks.forEach((p,i) => {
+        p.x+=p.vx; p.y+=p.vy; p.vy+=0.05; p.life-=0.02;
+        ctx.globalAlpha=p.life; ctx.fillStyle=p.color;
+        ctx.beginPath(); ctx.arc(p.x,p.y,3*p.life,0,Math.PI*2); ctx.fill();
+        if(p.life<=0) fireworks.splice(i,1);
+    });
+    ctx.globalAlpha=1;
 }
 
+
+// ===== VÒNG LẶP CHÍNH =====
 function loop(now) {
-  if(!started) { requestAnimationFrame(loop); return; }
-  const dt = (now - (lastNow || now))/1000; lastNow = now;
-  const tc = ((now - t0)/1000) % T_TOTAL;
-  fillBackground(now/1000);
-
-  let drawP = 1, msgIdx = -1, msgA = 0;
-  if(tc < T_DRAW) drawP = tc/T_DRAW;
-  else {
-    const tM = tc - T_DRAW, cyc = T_HOLD_MSG + T_TRANS_MSG;
-    msgIdx = Math.floor(tM/cyc);
-    const tIn = tM % cyc;
-    if(tIn < T_HOLD_MSG) msgA = Math.min(1, tIn*1.5) * Math.min(1, (T_HOLD_MSG-tIn)*2);
+  ctx.clearRect(0,0,W,H); // Xóa canvas để lộ background ảnh bên dưới
+  
+  if(started) {
+      updateAndDrawFloaters(); // Vẽ các icon bay
+      drawTree(now);          // Vẽ cây sinh động
+      drawMessage();          // Vẽ tin nhắn hiện tại
+      updateDrawFireworks();  // Vẽ pháo hoa nếu có click
   }
-
-  const col = "#f5c37a";
-  drawPath(outlineX, outlineY, outlineN, drawP, col, 2.5);
-  drawPath(starX, starY, starN, Math.min(1, drawP*1.2), col, 2);
-
-  if(msgIdx >= 0 && msgIdx < messages.length) {
-    drawCenteredText(messages[msgIdx].line1, messages[msgIdx].line2, msgA, H*0.8);
-  }
-
-  fireworks.forEach((fw, i) => {
-    fw.parts.forEach(p => {
-      p.x += p.vx; p.y += p.vy; p.vy += 0.05; p.age++;
-      ctx.globalAlpha = (fw.parts[0].life - p.age)/fw.parts[0].life;
-      ctx.fillStyle = `hsl(${fw.hue}, 80%, 70%)`;
-      ctx.fillRect(p.x, p.y, 2, 2);
-    });
-    if(fw.parts[0].age > fw.parts[0].life) fireworks.splice(i, 1);
-  });
 
   requestAnimationFrame(loop);
 }
 
+
+// ===== SỰ KIỆN & KHỞI TẠO =====
+function resize() {
+  DPR = window.devicePixelRatio || 1;
+  W = window.innerWidth; H = window.innerHeight;
+  canvas.width = W * DPR; canvas.height = H * DPR;
+  ctx.scale(DPR, DPR);
+  buildTree();
+  initFloaters();
+}
+
+// Click nút BẮT ĐẦU
 startBtn.addEventListener("click", () => {
-  started = true; t0 = performance.now(); startEl.classList.add("hide");
-  audio.play(); requestAnimationFrame(loop);
+  started = true;
+  startEl.classList.add("hide");
+  nextMsgBtn.classList.remove("hide"); // Hiện nút chuyển tin nhắn
+  audio.play().catch(()=>console.log("Cần tương tác để phát nhạc"));
 });
+
+// Click nút CHUYỂN TIN NHẮN (Mới)
+nextMsgBtn.addEventListener("click", () => {
+    msgIndex++; // Tăng index để sang câu tiếp theo
+    spawnFirework(W/2, H*0.8); // Bắn pháo hoa nhỏ khi chuyển câu
+});
+
+// Click màn hình bắn pháo hoa
 canvas.addEventListener("pointerdown", e => spawnFirework(e.clientX, e.clientY));
+
+// Âm thanh
+audio.loop = true; audio.volume = 0.7;
+vol.addEventListener("input", () => audio.volume = vol.value);
+muteBtn.addEventListener("click", () => audio.muted = !audio.muted);
+
+window.addEventListener("resize", resize);
 resize();
+requestAnimationFrame(loop);
