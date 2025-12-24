@@ -3,35 +3,33 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Merry Christmas 🎄</title>
+  <title>Merry Christmas! 🎄</title>
 
-  <!-- Font giống vibe ảnh mẫu (có mạng thì đẹp hơn, không có mạng vẫn fallback) -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Mountains+of+Christmas:wght@700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@600&family=Mountains+of+Christmas:wght@700&display=swap" rel="stylesheet">
 
-  <link rel="stylesheet" href="style.css?v=3" />
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
   <div id="start" class="start">
-   <div class="sub">Merry Christmas</div>
+    <div class="sub-title">Merry Christmas</div>
     <button id="startBtn" class="startBtn">
       <span class="dot"></span>
       <span class="text">BẮT ĐẦU</span>
     </button>
-<div class="sub">click để bắn pháo hoa</div>
+    <div class="hint-text">Gửi cậu một chút quà nhỏ</div>
   </div>
 
   <canvas id="c"></canvas>
 
   <div class="volUI">
-    <button id="muteBtn" class="iconBtn" title="Mute / Unmute">🔊</button>
+    <button id="muteBtn" class="iconBtn">🔊</button>
     <input id="vol" type="range" min="0" max="1" step="0.01" value="0.7" />
     <span id="hint" class="hint"></span>
   </div>
 
   <audio id="audio" src="music.mp3" preload="auto"></audio>
-
-  <script src="app.js?v=3"></script>
+  <script src="app.js"></script>
 </body>
 </html>
